@@ -286,7 +286,7 @@ class SaveHBJSONOperator(bpy.types.Operator):
 
 class ExportEnginesOperator(bpy.types.Operator):
     bl_idname = "wm.export_engines"
-    bl_label = "HF Engines Point Cache (.hbjson)",
+    bl_label = "HF Engines Point Cache (.hbjson)"
     bl_description = "Export engines in Houdini Point Cache format"
 
     def execute(self, context):
