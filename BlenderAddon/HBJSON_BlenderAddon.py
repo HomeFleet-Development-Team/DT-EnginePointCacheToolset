@@ -151,24 +151,6 @@ class ObjectMetaProperty(bpy.types.PropertyGroup):
     location: bpy.props.FloatVectorProperty(name="Location", size=3)
     dimensions: bpy.props.FloatVectorProperty(name="Dimensions", size=3)
 
-class SimplePopupOperator(bpy.types.Operator):
-    bl_idname = "wm.simple_popup"
-    bl_label = "Error"
-    
-    message: bpy.props.StringProperty(name="Message", default="default pop up")
-    
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text=self.message)
-
-    def execute(self, context):
-        self.report({'INFO'}, self.message)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
 class HBJsonPropertyGroup(bpy.types.PropertyGroup):
     json: bpy.props.StringProperty()
 
@@ -300,7 +282,7 @@ class ExportEnginesOperator(bpy.types.Operator):
                 break
 
         if not target:
-            bpy.ops.wm.simple_popup('INVOKE_DEFAULT', message="No \"engines\" collection found.")
+            self.report({'ERROR'}, "No \"engines\" collection found.")
         else:
             objects = target.objects
             bpy.ops.object.select_all(action='DESELECT')
@@ -324,32 +306,24 @@ class ExportEnginesOperator(bpy.types.Operator):
             bpy.ops.wm.save_hbjson('INVOKE_DEFAULT')
         return {'FINISHED'}
 
-def menu_func(self, context):
-    self.layout.operator(SimplePopupOperator.bl_idname)
 
 def export_menu_func(self, context):
     self.layout.operator(ExportEnginesOperator.bl_idname)
 
 def register():
     bpy.utils.register_class(ObjectMetaProperty)
-    bpy.utils.register_class(SimplePopupOperator)
     bpy.utils.register_class(HBJsonPropertyGroup)
     bpy.utils.register_class(SaveHBJSONOperator)
     bpy.utils.register_class(ExportEnginesOperator)
-    bpy.types.VIEW3D_MT_mesh_add.append(menu_func)
     bpy.types.TOPBAR_MT_file_export.append(export_menu_func)
     bpy.types.Scene.objects_meta = bpy.props.CollectionProperty(type=ObjectMetaProperty)
     bpy.types.Scene.json_data = bpy.props.CollectionProperty(type=HBJsonPropertyGroup)
-    # Insert the new option above "Lock Interface"
-    bpy.types.TOPBAR_MT_window.prepend(export_menu_func)
 
 def unregister():
     bpy.utils.unregister_class(ObjectMetaProperty)
-    bpy.utils.unregister_class(SimplePopupOperator)
     bpy.utils.unregister_class(HBJsonPropertyGroup)
     bpy.utils.unregister_class(SaveHBJSONOperator)
     bpy.utils.unregister_class(ExportEnginesOperator)
-    bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
     bpy.types.TOPBAR_MT_file_export.remove(export_menu_func)
     del bpy.types.Scene.objects_meta
     del bpy.types.Scene.json_data
