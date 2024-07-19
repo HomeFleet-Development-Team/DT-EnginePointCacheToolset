@@ -260,7 +260,7 @@ class SaveHBJSONOperator(bpy.types.Operator):
         # Set the default filename to JSON_<PROJECTNAME>.json
         blend_file_path = bpy.data.filepath
         project_name = os.path.splitext(os.path.basename(blend_file_path))[0]
-        default_filename = f"FX_HJ_UNSC_{project_name}_Engines.hbjson"
+        default_filename = f"FX_HJ_UNSC_{project_name}_Engine.hbjson"
         self.filepath = os.path.join(os.path.dirname(blend_file_path), default_filename)
         
         context.window_manager.fileselect_add(self)
