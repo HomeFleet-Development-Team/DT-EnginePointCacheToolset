@@ -153,7 +153,7 @@ class ObjectMetaProperty(bpy.types.PropertyGroup):
 
 class SimplePopupOperator(bpy.types.Operator):
     bl_idname = "wm.simple_popup"
-    bl_label = "Simple Popup"
+    bl_label = "Error"
     
     message: bpy.props.StringProperty(name="Message", default="default pop up")
     
