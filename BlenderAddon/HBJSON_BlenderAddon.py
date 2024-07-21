@@ -5,7 +5,7 @@ bl_info = {
     "warning": "",
     "doc_url": "https://github.com/HomeFleet-Development-Team/DT-EnginePointCacheToolset",
     "author": "Chokepoint Games",
-    "version": (1, 0),
+    "version": (1, 1),
     "blender": (4, 0, 0),
     "category": "Import-Export",
 }
@@ -290,6 +290,7 @@ class ExportEnginesOperator(bpy.types.Operator):
                 obj.select_set(True)
             bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
 
+            bpy.ops.transform.rotate(value=1.5708, orient_axis='X', orient_type='GLOBAL')
             context.scene.objects_meta.clear()
 
             for obj in objects:
@@ -303,6 +304,9 @@ class ExportEnginesOperator(bpy.types.Operator):
             context.scene.json_data.clear()
             context.scene.json_data.add()
             context.scene.json_data[0].json = json.dumps(json_data)
+
+            bpy.ops.transform.rotate(value=-1.5708, orient_axis='X', orient_type='GLOBAL')
+
             bpy.ops.wm.save_hbjson('INVOKE_DEFAULT')
         return {'FINISHED'}
 
