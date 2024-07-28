@@ -326,6 +326,16 @@ class ExportEnginesOperator(bpy.types.Operator):
             context.scene.objects_meta.clear()
 
             for obj in objects:
+                if obj.type == 'EMPTY':
+                    matrix = obj.matrix_world
+                    normal_vector = matrix.to_3x3() @ mathutils.Vector((0, 0, 1))
+                    normal_vector.normalize()
+                    
+                    meta = context.scene.objects_meta.add()
+                    meta.location = obj.location
+                    meta.dimensions = obj.scale
+                    meta.normal = normal_vector
+                    continue
 
                 if obj.type == 'MESH':
                     bpy.ops.object.select_all(action='DESELECT')
