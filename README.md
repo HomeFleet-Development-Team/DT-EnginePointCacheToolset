@@ -1,26 +1,31 @@
 # HomeFleet HBJSON Tools
 Houdini uses a proprietary file format for point caches called `.hbjson` when exporting a special effect to Unreal Engine Niagara. Those files cannont be edited in a text editor, Houdini nor Unreal Engine, effectively making the edition of the special effects impossible without the source files. 
-This repository contains tools to convert `.hbjson` files to `.json` and vice versa, as well as a Blender addon to export ship engines to the `.hbjson` format expected by HomeWorld3 ship engines Niagara Special Effects.
+This repository contains tools to convert `.hbjson` files to `.json` and vice versa, as well as a Blender addon to export point caches in the `.hbjson` format expected by HomeWorld3 Niagara Special Effects.
 
 ## HBJSON Blender Addon
 
 ### Description
-The HBJSON Blender Addon enables the exportation of ship engines to the HBJSON format expected by HomeWorld3 ship engines Niagara Special Effects. The addon exports each engine mesh as a separate object within a collection named "ENGINE".
+The HBJSON Blender Addon enables the exportation of ship engines, vector thrusters and idle lights to the HBJSON format expected by HomeWorld3 Niagara Special Effects.
 
 ### Features
-- Export engines in Houdini Point Cache format for HW3
+- Export ship engines, idle lights and vector thrusters in Houdini Point Cache format for HW3
 - Integrates into Blender's export menu
 
 ### Installation
 1. Open Blender.
 2. Go to `Edit > Preferences > Add-ons`.
 3. Click `Install` and select the `HBJSON_BlenderAddon.py` file.
-4. Enable the addon by checking the box next to "HF - Engines HBJSON Exporter".
+4. Enable the addon by checking the box next to "Homeworld 3 - HBJSON Exporter".
 
 ### Usage
-1. Separate the engine objects inside a collection named "ENGINE".
-2. Click on `File > Export > HF Engines Point Cache (.hbjson)`.
-3. Each engine mesh must be a separate object within the collection.
+1. Separate the engine objects inside a collection named "ENGINE", "VJETS" or "HERO LIGHTS".
+2. Click on `File > Export > Houdini Point Cache (.hbjson)`.
+
+#### Objects
+The objects inside a collection marked for exportation can either be a mesh or an "Empty" object.
+A mesh object will be exported by extracting normals, a dynamicly computing it's dimensions.
+An "Empty" object will be exported by using it's position, rotation and scale transforms as the object's properties.
+Any object that is not a mesh or an "Empty" object will be ignored during the exportation.
 
 ## HBJSON Transcoder
 
