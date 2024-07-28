@@ -1,11 +1,11 @@
 bl_info = {
-    "name": "HF - Engines HBJSON Exporter",
-    "description": "Export engines in Houdini Point Cache format for HW3.",
-    "location": "File > Export > HF Engines Point Cache (.hbjson)",
+    "name": "Homeworld 3 - HBJSON Exporter",
+    "description": "Export engines, lights or vector thrusters in Houdini Point Cache format for HomeWorld3.",
+    "location": "File > Export > Houdini Point Cache (.hbjson)",
     "warning": "",
     "doc_url": "https://github.com/HomeFleet-Development-Team/DT-EnginePointCacheToolset",
-    "author": "Chokepoint Games",
-    "version": (1, 1),
+    "author": "Chokepoint Games, HomeFleet Development Team",
+    "version": (1, 2),
     "blender": (4, 0, 0),
     "category": "Import-Export",
 }
@@ -15,6 +15,9 @@ import json
 import os
 import copy
 import struct
+import mathutils
+import numpy as np
+from collections import Counter
 
 class HBJsonGenerator:
     def __init__(self):
@@ -24,7 +27,7 @@ class HBJsonGenerator:
                 "num_samples": 0,
                 "num_frames": 1,
                 "num_points": 0,
-                "num_attrib": 18,
+                "num_attrib": 20,
                 "attrib_name": [
                     "id",
                     "InitialSpriteSizeX",
@@ -43,7 +46,9 @@ class HBJsonGenerator:
                     "Cd",
                     "DynamicMaterialParameterY",
                     "DynamicMaterialParameterZ",
-                    "MaterialOption"
+                    "hitnormal",
+                    "aligntosurface",
+                    "MaterialOption",
                 ],
                 "attrib_size": [
                     1,
@@ -62,6 +67,8 @@ class HBJsonGenerator:
                     1,
                     3,
                     1,
+                    1,
+                    3,
                     1,
                     1
                 ],
@@ -89,6 +96,10 @@ class HBJsonGenerator:
                     102,
                     102,
                     102,
+                    102,
+                    102,
+                    102,
+                    108,
                     108
                 ],
                 "data_type": "linear"
@@ -96,7 +107,7 @@ class HBJsonGenerator:
             "cache_data": {
                 "frames": [
                     {
-                        "number": 62,
+                        "number": 0,
                         "time": 0,
                         "num_points": 0,
                         "frame_data": []
@@ -117,6 +128,7 @@ class HBJsonGenerator:
         for i, point in enumerate(input_data):
             location = point["location"]
             dimensions = point["dimensions"]
+            normal = point["normal"]
             max_dimension = max(dimensions)
             sprite_size = max_dimension * 500
             pscale = max_dimension / inputs_max_dimension
@@ -139,6 +151,8 @@ class HBJsonGenerator:
                 [1.0, 1.0, 1.0],  # Cd
                 [1.0],  # DynamicMaterialParameterY
                 [1.0],  # DynamicMaterialParameterZ
+                normal,  # hitnormal
+                [1.401298464324817e-45],  # aligntosurface
                 [0.0]  # MaterialOption
             ]
 
@@ -150,6 +164,7 @@ class HBJsonGenerator:
 class ObjectMetaProperty(bpy.types.PropertyGroup):
     location: bpy.props.FloatVectorProperty(name="Location", size=3)
     dimensions: bpy.props.FloatVectorProperty(name="Dimensions", size=3)
+    normal: bpy.props.FloatVectorProperty(name="Normal", size=3)
 
 class HBJsonPropertyGroup(bpy.types.PropertyGroup):
     json: bpy.props.StringProperty()
@@ -260,7 +275,7 @@ class SaveHBJSONOperator(bpy.types.Operator):
         # Set the default filename to JSON_<PROJECTNAME>.json
         blend_file_path = bpy.data.filepath
         project_name = os.path.splitext(os.path.basename(blend_file_path))[0]
-        default_filename = f"FX_HJ_UNSC_{project_name}_Engine.hbjson"
+        default_filename = f"FX_HJ_<FACTION>_{project_name}_{context.scene.point_cache_type}.hbjson"
         self.filepath = os.path.join(os.path.dirname(blend_file_path), default_filename)
         
         context.window_manager.fileselect_add(self)
@@ -268,42 +283,76 @@ class SaveHBJSONOperator(bpy.types.Operator):
 
 class ExportEnginesOperator(bpy.types.Operator):
     bl_idname = "wm.export_engines"
-    bl_label = "HF Engines Point Cache (.hbjson)"
-    bl_description = "Export engines in Houdini Point Cache format"
+    bl_label = "Houdini Point Cache (.hbjson)"
+    bl_description = "Export engines, lights or vector thrusters in Houdini Point Cache format for HW3."
 
     def execute(self, context):
         collections = bpy.data.collections
 
         target = None
+        export_type = None
 
         for collection in collections:
+            is_active = collection == bpy.context.view_layer.active_layer_collection.collection
+            is_visible = collection.hide_viewport == False
+            is_render_enabled = collection.hide_render == False
+
+            if not is_active or not is_visible or not is_render_enabled:
+                continue
+
             if "engine" in collection.name.lower():
                 target = collection
+                export_type = "Engines"
+                break
+
+            if "thruster" in collection.name.lower() or "vector" in collection.name.lower() or "vjets" in collection.name.lower():
+                target = collection
+                export_type = "VJets"
+                break
+            
+            if "light" in collection.name.lower() or "idle" in collection.name.lower() or "hero" in collection.name.lower():
+                target = collection
+                export_type = "HERO"
                 break
 
         if not target:
-            self.report({'ERROR'}, "No \"engines\" collection found.")
+            self.report({'ERROR'}, "No \"Engines\", \"Vjets\" or \"Hero\" collection found.")
         else:
             objects = target.objects
             bpy.ops.object.select_all(action='DESELECT')
             for obj in objects:
                 obj.select_set(True)
-
-            bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
+            
             context.scene.objects_meta.clear()
 
             for obj in objects:
-                meta = context.scene.objects_meta.add()
-                meta.location = obj.location
-                meta.dimensions = obj.dimensions
+
+                if obj.type == 'MESH':
+                    bpy.ops.object.select_all(action='DESELECT')
+                    obj.select_set(True)
+
+                    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+                    bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
+
+                    meta = context.scene.objects_meta.add()
+                    meta.location = obj.location
+                    meta.dimensions = obj.dimensions
+
+                    mesh = obj.data
+                    normals = [l.normal.copy().freeze() for l in mesh.loops]
+                    common_normal = Counter(normals).most_common(1)[0][0]
+                    meta.normal = common_normal
+                    obj.select_set(False)
+                    continue
+                self.report({'WARNING'}, f"Object {obj.name} is not a mesh or empty object and as been ignored for " + export_type + " export.")
 
             hb_json_generator = HBJsonGenerator()
-            raw_engine_data = [{'location': list(meta.location), 'dimensions': list(meta.dimensions)} for meta in context.scene.objects_meta]
+            raw_engine_data = [{'location': list(meta.location), 'dimensions': list(meta.dimensions), 'normal':list(meta.normal)} for meta in context.scene.objects_meta]
             json_data = hb_json_generator.generate_json(raw_engine_data)
             context.scene.json_data.clear()
             context.scene.json_data.add()
             context.scene.json_data[0].json = json.dumps(json_data)
+            context.scene.point_cache_type = export_type
 
 
             bpy.ops.wm.save_hbjson('INVOKE_DEFAULT')
@@ -321,6 +370,7 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(export_menu_func)
     bpy.types.Scene.objects_meta = bpy.props.CollectionProperty(type=ObjectMetaProperty)
     bpy.types.Scene.json_data = bpy.props.CollectionProperty(type=HBJsonPropertyGroup)
+    bpy.types.Scene.point_cache_type = bpy.props.StringProperty(name="Point Cache Type")
 
 def unregister():
     bpy.utils.unregister_class(ObjectMetaProperty)
