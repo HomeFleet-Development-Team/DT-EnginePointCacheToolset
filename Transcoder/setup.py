@@ -14,7 +14,7 @@ if sys.platform == "win32":
 
 setup(
     name="HBJSON_Trasncoder",
-    version="1.0",
+    version="1.2",
     description="Two Way Converter for Houdini Point Cache files",
     options={"build_exe": build_exe_options},
     executables=[Executable("HBJSON_Trasncoder.py", base=base)],
