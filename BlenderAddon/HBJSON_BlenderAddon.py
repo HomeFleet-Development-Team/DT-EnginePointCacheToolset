@@ -174,7 +174,6 @@ class SaveHBJSONOperator(bpy.types.Operator):
     bl_label = "Save Point Cache"
     
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    buffer = bytearray()
 
     MarkerTypeChar = ord(b'c')
     MarkerTypeInt8 = ord(b'b')
@@ -262,6 +261,7 @@ class SaveHBJSONOperator(bpy.types.Operator):
         self.write_marker(self.MarkerArrayEnd)
 
     def execute(self, context):
+        self.buffer = bytearray()  # Reset the buffer here
         data_to_save = json.loads(context.scene.json_data[0].json)
         self.write_marker(self.MarkerObjectStart)
         self.write_object(data_to_save)
@@ -270,6 +270,7 @@ class SaveHBJSONOperator(bpy.types.Operator):
             f.write(self.buffer)
         self.report({'INFO'}, f"HBJSON saved to {self.filepath}")
         return {'FINISHED'}
+
     
     def invoke(self, context, event):
         # Set the default filename to JSON_<PROJECTNAME>.json
