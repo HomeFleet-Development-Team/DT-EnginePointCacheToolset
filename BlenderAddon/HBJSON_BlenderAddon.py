@@ -5,8 +5,8 @@ bl_info = {
     "warning": "",
     "doc_url": "https://github.com/HomeFleet-Development-Team/DT-EnginePointCacheToolset",
     "author": "Chokepoint Games, HomeFleet Development Team",
-    "version": (1, 2),
-    "blender": (4, 0, 0),
+    "version": (1, 3),
+    "blender": (4, 2, 0),
     "category": "Import-Export",
 }
 
